@@ -22,8 +22,8 @@ class LogWatcher:                          # God class : lit, parse, détecte, s
                 user, ip = m.group(1), m.group(2)
                 self.counts[ip] = self.counts.get(ip, 0) + 1
                 if self.counts[ip] == 5:
-                    # Injection SQL : ip vient du log, donc de l'attaquant
-                    DB.execute(f"INSERT INTO incidents VALUES ('{ip}', '{user}')")
+                    # ip vient du log, donc de l'attaquant : le pilote sépare code SQL et données
+                    DB.execute("INSERT INTO incidents VALUES (?, ?)", (ip, user))
                     self.alert(ip)
 
     def alert(self, ip):
