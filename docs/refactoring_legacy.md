@@ -6,7 +6,7 @@
 
 ## 1. Relevé des problèmes
 
-| # | Ligne(s) | Problème | Type | Conséquence | Correction |
+| # | Ligne(s) (version d'origine, commit `b1e0359`) | Problème | Type | Conséquence | Correction |
 |---|---|---|---|---|---|
 | P1 | 10 | `SMTP_PASSWORD = "Sup3rS3cret!"` en dur | Sécurité (CWE-798) · I | secret versionné dans Git = secret compromis, identique sur tous les postes | lu dans l'environnement au moment de l'usage ; jamais de valeur par défaut |
 | P2 | 26 | `f"INSERT INTO incidents VALUES ('{ip}', '{user}')"` | Sécurité (injection SQL, CWE-89) · T, I | `ip` et `user` viennent du journal, donc de l'attaquant : il peut écrire dans la base ou la corrompre | requête paramétrée `execute("... VALUES (?, ?)", (ip, user))` ; à terme, port `IncidentRepository` |
