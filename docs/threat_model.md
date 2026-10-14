@@ -1,7 +1,7 @@
 # Modèle de menaces — Queen Bee
 
 - **Statut** : brouillon J1-A1 — 14/10/2026
-- **Auteur** : Marlon (travail individuel : pilote, copilote qualité, scribe, gardien)
+- **Auteur** : Andy
 - **Méthode** : actifs → acteurs → DFD et frontières de confiance → STRIDE par flux → exigences EX-nn testables
 - **Périmètre** : la plateforme Queen Bee (ingestion des événements d'agents, détection, gestion des incidents,
   notification du SOC, blocage d'IP). Hors périmètre : la sécurité des hôtes surveillés eux-mêmes,
