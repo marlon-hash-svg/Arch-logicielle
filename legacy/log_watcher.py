@@ -5,9 +5,8 @@
 Atelier J1-A2 : relever toutes les violations SOLID et de sécurité, puis refactorer.
 Ne pas déployer. Ne pas copier ces pratiques.
 """
-import re, sqlite3, smtplib
+import os, re, sqlite3, smtplib
 
-SMTP_PASSWORD = "Sup3rS3cret!"           # secret en dur, versionné dans Git
 DB = sqlite3.connect("incidents.db")
 
 class LogWatcher:                          # God class : lit, parse, détecte, stocke, alerte
@@ -27,8 +26,11 @@ class LogWatcher:                          # God class : lit, parse, détecte, s
                     self.alert(ip)
 
     def alert(self, ip):
+        password = os.environ.get("QUEENBEE_SMTP_PASSWORD")   # lu à l'usage, jamais versionné
+        if not password:
+            raise RuntimeError("QUEENBEE_SMTP_PASSWORD non défini")  # pas de valeur par défaut
         s = smtplib.SMTP("mail.local")
-        s.login("queenbee", SMTP_PASSWORD)
+        s.login("queenbee", password)
         s.sendmail("qb@local", "soc@local", f"Brute force from {ip}")
 
     def report(self, kind):
