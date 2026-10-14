@@ -41,14 +41,21 @@ def _run(
 
 def test_five_failures_from_same_ip_raise_one_alert(legacy: ModuleType, tmp_path: Path) -> None:
     alerts, incidents = _run(legacy, tmp_path, ["10.0.0.66"] * 6)
-    assert alerts == ["10.0.0.66 port 22 ssh2"]  # la regex gourmande avale la fin de ligne
-    assert incidents == [("10.0.0.66 port 22 ssh2", "root")]
+    assert alerts == ["10.0.0.66"]  # avant le correctif : "10.0.0.66 port 22 ssh2"
+    assert incidents == [("10.0.0.66", "root")]
 
 
 def test_failures_below_threshold_or_spread_raise_no_alert(
     legacy: ModuleType, tmp_path: Path
 ) -> None:
     ips = ["10.0.0.66"] * 4 + [f"10.0.0.{n}" for n in range(1, 5)]
+    alerts, incidents = _run(legacy, tmp_path, ips)
+    assert alerts == []
+    assert incidents == []
+
+
+def test_trapped_lines_are_ignored(legacy: ModuleType, tmp_path: Path) -> None:
+    ips = ["10.0.0.66' OR 1=1 --"] * 5 + ["10.0.0.66 " + "A" * 600] * 5
     alerts, incidents = _run(legacy, tmp_path, ips)
     assert alerts == []
     assert incidents == []
