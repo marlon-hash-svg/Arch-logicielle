@@ -142,8 +142,8 @@ from queenbee.bootstrap import build_app
 from queenbee.config import settings_from_env
 import os
 
-app = build_app(settings_from_env(os.environ))   # famille prod par défaut
-incidents = app.ingest(events)                   # events : list[SecurityEvent] déjà validés
+app = build_app(settings_from_env(os.environ))  # famille prod par défaut
+incidents = app.ingest(events)  # events : list[SecurityEvent] déjà validés
 ```
 
 ## 8. Parcours d'un événement
