@@ -38,3 +38,15 @@ class Notifier(Protocol):
     def notify(self, alert: Alert) -> None:
         """Transmet l'alerte ; lève une exception en cas d'échec, ne l'avale jamais."""
         ...
+
+
+class Firewall(Protocol):
+    """Action sur le filtrage réseau : bloquer ou débloquer une adresse IP déjà validée."""
+
+    def block(self, ip: str) -> None:
+        """Ajoute l'IP à la liste de blocage."""
+        ...
+
+    def unblock(self, ip: str) -> None:
+        """Retire l'IP de la liste de blocage."""
+        ...
