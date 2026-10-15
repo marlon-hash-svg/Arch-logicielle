@@ -1,0 +1,144 @@
+@startuml classes_patterns_defensifs
+title Queen Bee — patterns défensifs (J2-A1)
+hide empty members
+skinparam classAttributeIconSize 0
+
+package "domain" {
+  class Principal <<frozen>> {
+    +user : str
+    +roles : frozenset[str]
+    +has(role) : bool
+  }
+  class Alert <<frozen>>
+  class Incident {
+    +id : UUID
+    +status : IncidentStatus
+    +transition_to(new)
+  }
+  class DomainError
+}
+
+package "application" {
+  interface IncidentRepository <<Protocol>> {
+    +add(incident)
+    +get(id) : Incident?
+    +save(incident)
+    +list_open() : list[Incident]
+  }
+  interface Notifier <<Protocol>> {
+    +notify(alert)
+  }
+  interface Firewall <<Protocol>> {
+    +block(ip)
+    +unblock(ip)
+  }
+
+  class IncidentReadProxy <<Proxy>> {
+    -inner : IncidentRepository
+    -who : Principal
+    +denied : int
+  }
+  note right of IncidentReadProxy
+    C · même contrat que l'objet protégé
+    lecture : viewer | analyst
+    écriture : analyst ; refus comptés + audités
+  end note
+
+  class DetectionService <<Observer (sujet)>> {
+    +notify_failures : int
+    +ingest(events) : list[Incident]
+  }
+  note bottom of DetectionService
+    D · un abonné en panne est compté
+    et journalisé ; les autres sont prévenus
+  end note
+
+  class IncidentService {
+    +move(who, incident_id, to) : Incident
+  }
+  note bottom of IncidentService
+    autoriser -> vérifier -> règle -> persister
+    chaque move et chaque refus audités
+  end note
+
+  class AccessDeniedError
+}
+
+package "adapters.outbound" {
+  class AuditedNotifier <<Decorator>> {
+    -inner : Notifier
+  }
+  class RateLimitedNotifier <<Decorator>> {
+    -inner : Notifier
+    -clock : () -> float
+    +dropped : int
+  }
+  note bottom of RateLimitedNotifier
+    D · P · 1 000 alertes -> 3 transmises,
+    997 comptées ; horloge injectée
+  end note
+  class MemoryNotifier
+  class LogNotifier
+  class InMemoryIncidentRepository
+  class SqliteIncidentRepository
+
+  interface Command <<Protocol>> {
+    +execute()
+    +undo()
+  }
+  class BlockIpCommand <<Command>> {
+    +ip : str
+  }
+  note bottom of BlockIpCommand
+    I · P · IP validée à la construction,
+    avant tout appel au pare-feu
+  end note
+  class CommandHistory {
+    +run(command)
+    +undo_last()
+  }
+  class InMemoryFirewall {
+    +blocked : set[str]
+  }
+}
+
+package "adapters.inbound" {
+  class log_parser <<Adapter>> {
+    +parse_sshd_line(line) : SecurityEvent
+  }
+  note bottom of log_parser
+    I · taille ≤ 512 avant la regex,
+    fullmatch, le domaine revalide
+  end note
+}
+
+IncidentReadProxy ..|> IncidentRepository
+IncidentReadProxy o--> IncidentRepository : protège
+IncidentReadProxy --> Principal
+IncidentReadProxy ..> AccessDeniedError : lève
+
+IncidentService --> IncidentRepository
+IncidentService ..> AccessDeniedError : lève
+IncidentService ..> Incident
+
+DetectionService --> IncidentRepository
+DetectionService o--> "0..*" Notifier : abonnés
+
+AuditedNotifier ..|> Notifier
+AuditedNotifier o--> Notifier : enveloppe
+RateLimitedNotifier ..|> Notifier
+RateLimitedNotifier o--> Notifier : enveloppe
+MemoryNotifier ..|> Notifier
+LogNotifier ..|> Notifier
+InMemoryIncidentRepository ..|> IncidentRepository
+SqliteIncidentRepository ..|> IncidentRepository
+
+BlockIpCommand ..|> Command
+BlockIpCommand --> Firewall
+InMemoryFirewall ..|> Firewall
+CommandHistory o--> "0..*" Command
+BlockIpCommand ..> DomainError : lève
+
+log_parser ..> DomainError : lève
+Notifier ..> Alert
+@enduml
