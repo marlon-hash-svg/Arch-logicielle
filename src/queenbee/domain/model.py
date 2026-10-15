@@ -90,8 +90,32 @@ class Alert:
         if not self.rule:
             raise DomainError("règle absente")
         _check_ip(self.source_ip)
-        if self.severity not in Severity:
-            raise DomainError("gravité inconnue")
+        try:
+            severity = Severity(self.severity)
+        except ValueError as exc:
+            raise DomainError("gravité inconnue") from exc
+        object.__setattr__(self, "severity", severity)  # normalise 3 -> Severity.HIGH
+
+
+KNOWN_ROLES: Final = frozenset({"analyst", "viewer"})
+
+
+@dataclass(frozen=True, slots=True)
+class Principal:
+    """L'identité qui agit : un nom et des rôles pris dans une liste fermée."""
+
+    user: str
+    roles: frozenset[str]
+
+    def __post_init__(self) -> None:
+        if len(self.user) > MAX_USERNAME or not _USERNAME_RE.fullmatch(self.user):
+            raise DomainError("identité invalide")
+        if not self.roles <= KNOWN_ROLES:
+            raise DomainError("rôle inconnu")
+
+    def has(self, role: str) -> bool:
+        """Vrai si l'identité possède ce rôle."""
+        return role in self.roles
 
 
 @dataclass(slots=True)
